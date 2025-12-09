@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Manager Login - TaskAssign</title>
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body>
+  <main class="auth-wrap">
+    <a class="back" href="index.html">← Back</a>
+    <h2>Manager Login</h2>
+    <p class="muted">Multiple manager accounts</p>
+
+    <form id="mgrForm" class="auth-form">
+      <label>Username
+        <input type="text" id="mgrUser" required placeholder="e.g. SUBHANKAR" />
+      </label>
+      <label>Password
+        <input type="password" id="mgrPass" required placeholder="your password" />
+      </label>
+      <button class="btn" type="submit">Login</button>
+      <p class="hint">
+        Demo managers:<br />
+        <strong>AMITABHA GHOSH / amitabha123</strong><br />
+        <strong>RAM / ram123</strong>
+      </p>
+    </form>
+
+    <div id="err" class="error" role="alert" aria-live="polite"></div>
+  </main>
+
+  <script src="manager-login.js"></script>
+</body>
+</html>

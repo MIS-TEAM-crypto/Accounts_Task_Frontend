@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>User Dashboard - TaskAssign</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+  <header class="hd">
+    <div class="wrap">
+      <h1 id="greet">User Dashboard</h1>
+      <div class="actions">
+        <button id="logoutBtn" class="btn small">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap main">
+    <section class="panel">
+      <!-- Top controls: date filter + Leave button -->
+      <div class="panel-header">
+        <div class="filter-group">
+          <label class="filter-label">
+            Task Date
+            <input type="date" id="taskDate" />
+          </label>
+          <button id="refreshBtn" class="btn btn-secondary">Refresh</button>
+        </div>
+
+        <!-- Leave button (single for all tasks) -->
+        <button id="leaveBtn" class="btn btn-outline">Leave</button>
+      </div>
+
+      <!-- Tasks list -->
+      <div id="taskList" class="task-list interactive">
+        <!-- Filled by JS -->
+      </div>
+
+      <!-- Info / errors -->
+      <div id="taskMessage" class="task-message"></div>
+    </section>
+  </main>
+
+  <script src="user-dashboard.js"></script>
+</body>
+</html>

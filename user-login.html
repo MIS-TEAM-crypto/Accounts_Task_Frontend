@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>User Login - TaskAssign</title>
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body>
+  <main class="auth-wrap">
+    <a class="back" href="index.html">← Back</a>
+    <h2>User Login</h2>
+    <p class="muted">Use one of the demo user accounts</p>
+
+    <form id="loginForm" class="auth-form">
+      <label>Username
+        <input type="text" id="username" required placeholder="e.g. alice" />
+      </label>
+
+      <label>Password
+        <input type="password" id="password" required placeholder="password" />
+      </label>
+
+      <button class="btn" type="submit">Login</button>
+      <p class="hint">Demo users: <strong>KOUSHIK PURAKAIT/K1234</strong>, <strong>SOURAV PAIK/S1234</strong></p>
+    </form>
+
+    <div id="err" class="error" role="alert" aria-live="polite"></div>
+  </main>
+
+  <script src="user-login.js"></script>
+</body>
+</html>

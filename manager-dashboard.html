@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Manager Dashboard - TaskAssign</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+  <header class="hd">
+    <div class="wrap">
+      <h1 id="greet">Manager Dashboard</h1>
+      <div class="actions">
+        <button id="logoutBtn" class="btn small">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap main">
+    <section class="panel">
+      <div class="panel-header">
+        <div class="filter-group">
+          <label class="filter-label">
+            Task Date
+            <input type="date" id="taskDate" />
+          </label>
+
+          <button id="refreshBtn" class="btn btn-secondary">Refresh</button>
+
+          <!-- NEW: User dropdown -->
+          <label class="filter-label">
+            User
+            <select id="userFilter">
+              <option value="all">All Users</option>
+            </select>
+          </label>
+        </div>
+
+        <span class="manager-note">Showing users under you</span>
+      </div>
+
+      <!-- Manager view: grouped by user -->
+      <div id="managerTaskContainer" class="manager-task-container">
+        <!-- Filled by JS -->
+      </div>
+
+      <div id="taskMessage" class="task-message"></div>
+    </section>
+  </main>
+
+  <script src="manager-dashboard.js"></script>
+</body>
+</html>
