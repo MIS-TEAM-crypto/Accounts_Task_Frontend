@@ -25,13 +25,12 @@ const API = "https://accounts-task-backend-1.onrender.com";
     location.href = "index.html";
   };
 
-  // 🔹 Re-load when filters change
   filterUser.addEventListener("change", loadScores);
   filterManager.addEventListener("change", loadScores);
   filterType.addEventListener("change", loadScores);
   filterDate.addEventListener("change", loadScores);
 
-  // ---------- MAIN FUNCTION ----------
+  // ---------- MAIN ----------
   async function loadScores() {
     scoreCards.innerHTML = "<p>Loading...</p>";
 
@@ -43,11 +42,9 @@ const API = "https://accounts-task-backend-1.onrender.com";
       return;
     }
 
-    // 🔹 Save currently selected filters
     const prevUser = filterUser.value;
     const prevManager = filterManager.value;
 
-    // 🔹 Rebuild dropdowns but keep previous selections if possible
     fillDropdowns(allRows, prevUser, prevManager);
 
     const filteredRows = applyUserFilters(allRows);
@@ -56,7 +53,7 @@ const API = "https://accounts-task-backend-1.onrender.com";
     renderCards(scoreMap);
   }
 
-  // ---------- DATE RANGE LOGIC ----------
+  // ---------- DATE RANGE ----------
   function computeDateRange() {
     const type = filterType.value;
     const baseDate = new Date(filterDate.value);
@@ -71,7 +68,7 @@ const API = "https://accounts-task-backend-1.onrender.com";
     if (type === "week") {
       const d = new Date(baseDate);
       const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday = first day
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
       const monday = new Date(d.setDate(diff));
       const sunday = new Date(d.setDate(diff + 6));
 
@@ -99,8 +96,11 @@ const API = "https://accounts-task-backend-1.onrender.com";
       params.append("start", start);
       params.append("end", end);
 
-      const res = await fetch(`${API}/all-status-range?${params.toString()}`);
-      return (await res.json()).data;
+      // FIXED ENDPOINT BELOW ⬇⬇⬇
+      const res = await fetch(`${API}/api/all-status-range?${params.toString()}`);
+
+      const json = await res.json();
+      return json.data;
     } catch (err) {
       console.log(err);
       return null;
@@ -112,48 +112,41 @@ const API = "https://accounts-task-backend-1.onrender.com";
     const userSet = new Set();
     const managerSet = new Set();
 
-    rows.forEach(r => {
+    rows.forEach((r) => {
       if (r.username) userSet.add(r.username);
       if (r.manager) managerSet.add(r.manager);
     });
 
-    // Users
     let userOptions = `<option value="">All Users</option>`;
-    [...userSet].forEach(u => {
+    [...userSet].forEach((u) => {
       userOptions += `<option value="${u}">${u}</option>`;
     });
     filterUser.innerHTML = userOptions;
 
-    // Managers
     let managerOptions = `<option value="">All Managers</option>`;
-    [...managerSet].forEach(m => {
+    [...managerSet].forEach((m) => {
       managerOptions += `<option value="${m}">${m}</option>`;
     });
     filterManager.innerHTML = managerOptions;
 
-    // 🔹 Restore previous selection if it still exists
-    if (prevUser && userSet.has(prevUser)) {
-      filterUser.value = prevUser;
-    }
-    if (prevManager && managerSet.has(prevManager)) {
-      filterManager.value = prevManager;
-    }
+    if (prevUser && userSet.has(prevUser)) filterUser.value = prevUser;
+    if (prevManager && managerSet.has(prevManager)) filterManager.value = prevManager;
   }
 
-  // ---------- FILTER BY USER/MANAGER ----------
+  // ---------- FILTER ----------
   function applyUserFilters(rows) {
-    return rows.filter(r => {
+    return rows.filter((r) => {
       if (filterUser.value && r.username !== filterUser.value) return false;
       if (filterManager.value && r.manager !== filterManager.value) return false;
       return true;
     });
   }
 
-  // ---------- COMPUTE TOTAL SCORE ----------
+  // ---------- TOTAL SCORE ----------
   function computeTotalScores(rows) {
     const scoreMap = {};
 
-    rows.forEach(r => {
+    rows.forEach((r) => {
       const user = r.username || "Unknown";
       if (!scoreMap[user]) scoreMap[user] = 0;
 
@@ -164,7 +157,7 @@ const API = "https://accounts-task-backend-1.onrender.com";
     return scoreMap;
   }
 
-  // ---------- RENDER CARDS ----------
+  // ---------- RENDER ----------
   function renderCards(scoreMap) {
     scoreCards.innerHTML = "";
 
@@ -178,9 +171,11 @@ const API = "https://accounts-task-backend-1.onrender.com";
       div.className = "card";
 
       let scoreClass =
-        score > 0 ? "score-positive" :
-        score < 0 ? "score-negative" :
-        "score-zero";
+        score > 0
+          ? "score-positive"
+          : score < 0
+          ? "score-negative"
+          : "score-zero";
 
       div.innerHTML = `
         <h2>${user}</h2>

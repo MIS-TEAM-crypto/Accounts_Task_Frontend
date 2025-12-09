@@ -47,7 +47,7 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
 
     const dateStr = dateInput.value || todayStr;
 
-    const url = `${API_BASE_URL}/user-tasks?username=${encodeURIComponent(
+    const url = `${API_BASE_URL}/api/user-tasks?username=${encodeURIComponent(
       username
     )}&date=${encodeURIComponent(dateStr)}`;
 
@@ -67,7 +67,7 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
 
   async function fetchTeamUsers() {
     try {
-      const url = `${API_BASE_URL}/user-team?username=${encodeURIComponent(
+      const url = `${API_BASE_URL}/api/user-team?username=${encodeURIComponent(
         username
       )}`;
       const res = await fetch(url);
@@ -87,11 +87,11 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
       task,
       manager: managerName,
       date: dateForUpdate,
-      status // '' means clear status
+      status
     };
 
     try {
-      await fetch(`${API_BASE_URL}/update-status`, {
+      await fetch(`${API_BASE_URL}/api/update-status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -110,7 +110,7 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
       assignTo: assignee
     };
 
-    const res = await fetch(`${API_BASE_URL}/assign-task`, {
+    const res = await fetch(`${API_BASE_URL}/api/assign-task`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -143,72 +143,56 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
     const currentDate = dateInput.value || todayStr;
 
     tasks.forEach((t, index) => {
-      const kind = t.kind || 'today'; // 'today' | 'pending'
+      const kind = t.kind || 'today';
       const isPendingRow = kind === 'pending';
       const status = (t.status || '').trim();
       const assignedDate = (t.assignedDate || '').trim();
       const completionDate = (t.completionDate || '').trim();
-      const rowDate = t.date || currentDate; // important for pending rows
+      const rowDate = t.date || currentDate;
 
-      const assignedBy = (t.assignedBy || '').trim();  // who gave the task to me
-      const delegatedTo = (t.delegatedTo || '').trim(); // to whom I delegated today
+      const assignedBy = (t.assignedBy || '').trim();
+      const delegatedTo = (t.delegatedTo || '').trim();
 
       let metaLines = '';
 
-      // Kind pill
       if (isPendingRow) {
         metaLines += `<span class="task-kind-pill">Previous Pending</span>`;
       } else {
         metaLines += `<span class="task-kind-pill">Today</span>`;
       }
 
-      // Pending info only on pending row
       if (isPendingRow && assignedDate) {
-        metaLines += `<p class="task-pending">Pending from ${escapeHtml(
-          assignedDate
-        )}</p>`;
+        metaLines += `<p class="task-pending">Pending from ${escapeHtml(assignedDate)}</p>`;
       }
 
-      // Completion info (on the completion date for the TODAY row)
       if (!isPendingRow && completionDate && completionDate === currentDate) {
-        metaLines += `<p class="task-completed">Completed on ${escapeHtml(
-          completionDate
-        )}</p>`;
+        metaLines += `<p class="task-completed">Completed on ${escapeHtml(completionDate)}</p>`;
       }
 
-      // Assigned info
       if (assignedBy) {
-        metaLines += `<p class="task-assigned-by">Assigned by ${escapeHtml(
-          assignedBy
-        )}</p>`;
+        metaLines += `<p class="task-assigned-by">Assigned by ${escapeHtml(assignedBy)}</p>`;
       }
       if (delegatedTo) {
-        metaLines += `<p class="task-assigned-to">Assigned to ${escapeHtml(
-          delegatedTo
-        )}</p>`;
+        metaLines += `<p class="task-assigned-to">Assigned to ${escapeHtml(delegatedTo)}</p>`;
       }
 
       const row = document.createElement('div');
       row.className = 'task task-interactive';
-      if (isPendingRow) {
-        row.classList.add('task-pending-row');
-      }
+      if (isPendingRow) row.classList.add('task-pending-row');
       row.dataset.index = index;
 
-      const canAssign = !isPendingRow && !delegatedTo; // cannot assign if already delegated
-      const isLocked = !!delegatedTo; // if delegated away, no Yes/No
+      const canAssign = !isPendingRow && !delegatedTo;
+      const isLocked = !!delegatedTo;
 
       let actionsHtml = '';
 
       if (isLocked) {
-        // Row is locked because user delegated it away
         actionsHtml = `
           <div class="task-actions">
             <span class="task-locked-msg">You have assigned this task to ${escapeHtml(
               delegatedTo
             )}.</span>
-          </div>
-        `;
+          </div>`;
       } else {
         const assignDropdownHtml = canAssign
           ? `
@@ -218,37 +202,32 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
                 ${teamUsers
                   .filter((u) => u !== username)
                   .map(
-                    (u) =>
-                      `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`
+                    (u) => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`
                   )
                   .join('')}
               </select>
               <button class="assign-confirm" data-index="${index}">OK</button>
               <button class="assign-cancel" data-index="${index}">Cancel</button>
-            </div>
-          `
+            </div>`
           : '';
 
         actionsHtml = `
           <div class="task-actions">
             <button class="btn-yes"
-                    data-index="${index}"
-                    data-task="${escapeHtml(t.task || '')}"
-                    data-manager="${escapeHtml(t.manager || '')}"
-                    data-date="${escapeHtml(rowDate)}">Yes</button>
+              data-index="${index}"
+              data-task="${escapeHtml(t.task || '')}"
+              data-manager="${escapeHtml(t.manager || '')}"
+              data-date="${escapeHtml(rowDate)}">Yes</button>
+
             <button class="btn-no"
-                    data-index="${index}"
-                    data-task="${escapeHtml(t.task || '')}"
-                    data-manager="${escapeHtml(t.manager || '')}"
-                    data-date="${escapeHtml(rowDate)}">No</button>
-            ${
-              canAssign
-                ? `<button class="btn-assign" data-index="${index}">Assign</button>`
-                : ''
-            }
+              data-index="${index}"
+              data-task="${escapeHtml(t.task || '')}"
+              data-manager="${escapeHtml(t.manager || '')}"
+              data-date="${escapeHtml(rowDate)}">No</button>
+
+            ${canAssign ? `<button class="btn-assign" data-index="${index}">Assign</button>` : ''}
             ${assignDropdownHtml}
-          </div>
-        `;
+          </div>`;
       }
 
       row.innerHTML = `
@@ -262,11 +241,9 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
 
       taskListEl.appendChild(row);
 
-      // Pre-select based on current status (only for today's non-delegated row)
       if (!isPendingRow && !delegatedTo && (status === 'Yes' || status === 'No')) {
         selectionState.set(index, status);
-        const btnSelector = status === 'Yes' ? '.btn-yes' : '.btn-no';
-        const btn = row.querySelector(btnSelector);
+        const btn = row.querySelector(status === 'Yes' ? '.btn-yes' : '.btn-no');
         if (btn) btn.classList.add('selected');
       }
     });
@@ -274,38 +251,31 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
 
   // ---------- EVENTS ----------
 
-  // Handle clicks: Assign (open/confirm/cancel) + Yes/No toggle behaviour
   taskListEl.addEventListener('click', async (e) => {
     try {
-      // --- Assign confirm ---
       const assignConfirm = e.target.closest('.assign-confirm');
       if (assignConfirm) {
         const index = Number(assignConfirm.dataset.index);
-        if (Number.isNaN(index)) return;
-
         const panel = assignConfirm.closest('.assign-ui');
-        if (!panel) return;
-
         const selectEl = panel.querySelector('.assign-select');
-        const assignee = selectEl ? selectEl.value : '';
+        const assignee = selectEl.value;
+
         if (!assignee) {
           alert('Please select a user to assign this task.');
           return;
         }
 
         const t = currentTasks[index];
-        if (!t) return;
-
         const dateForUpdate = t.date || dateInput.value || todayStr;
-        const msg = `Are you sure you want to assign "${t.task}" to "${assignee}" for ${dateForUpdate}?\n\nAfter assigning, you will not be able to mark Yes/No for this task on this date.`;
+
+        const msg = `Are you sure you want to assign "${t.task}" to "${assignee}" for ${dateForUpdate}?\n\nAfter assigning, you will not be able to mark Yes/No.`;
         if (!confirm(msg)) return;
 
-        await sendAssignRequest(t.task || '', t.manager || '', dateForUpdate, assignee);
+        await sendAssignRequest(t.task, t.manager, dateForUpdate, assignee);
         await fetchUserTasks();
         return;
       }
 
-      // --- Assign cancel ---
       const assignCancel = e.target.closest('.assign-cancel');
       if (assignCancel) {
         const panel = assignCancel.closest('.assign-ui');
@@ -313,55 +283,42 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
         return;
       }
 
-      // --- Assign button: show/hide dropdown ---
       const assignBtn = e.target.closest('.btn-assign');
       if (assignBtn) {
         const index = Number(assignBtn.dataset.index);
-        if (Number.isNaN(index)) return;
         const row = assignBtn.closest('.task');
-        if (!row) return;
         const panel = row.querySelector(`.assign-ui[data-index="${index}"]`);
-        if (!panel) return;
         panel.classList.toggle('hidden');
         return;
       }
 
-      // --- Yes/No buttons (toggle-off behaviour) ---
       const yesBtn = e.target.closest('.btn-yes');
       const noBtn = e.target.closest('.btn-no');
       if (!yesBtn && !noBtn) return;
 
       const btn = yesBtn || noBtn;
       const index = Number(btn.dataset.index);
-      if (Number.isNaN(index)) return;
-
-      const task = btn.dataset.task || '';
-      const managerName = btn.dataset.manager || '';
-      const dateForUpdate = btn.dataset.date || (dateInput.value || todayStr);
+      const task = btn.dataset.task;
+      const managerName = btn.dataset.manager;
+      const dateForUpdate = btn.dataset.date;
 
       const newStatus = yesBtn ? 'Yes' : 'No';
-      const prevStatus = selectionState.get(index) || null;
+      const prevStatus = selectionState.get(index);
 
       const row = btn.closest('.task');
-      if (!row) return;
 
-      // Clear all selected classes first
-      row.querySelectorAll('.btn-yes, .btn-no').forEach((b) => {
-        b.classList.remove('selected');
-      });
+      row.querySelectorAll('.btn-yes, .btn-no').forEach((b) => b.classList.remove('selected'));
 
-      // If same button clicked again -> toggle OFF
       if (prevStatus === newStatus) {
         selectionState.delete(index);
-        // send empty status to clear it on backend
         sendStatusUpdate(task, managerName, '', dateForUpdate);
         return;
       }
 
-      // Normal selection
       selectionState.set(index, newStatus);
       btn.classList.add('selected');
       sendStatusUpdate(task, managerName, newStatus, dateForUpdate);
+
     } catch (err) {
       console.error('Error handling click', err);
       alert('Something went wrong. Please try again.');
@@ -373,6 +330,7 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
     if (!confirmLeave) return;
 
     const dateStr = dateInput.value || todayStr;
+
     const payload = {
       username,
       manager: '',
@@ -380,14 +338,14 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
     };
 
     try {
-      await fetch(`${API_BASE_URL}/leave`, {
+      await fetch(`${API_BASE_URL}/api/leave`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
       await fetchUserTasks();
-      alert('Leave marked for all tasks (No for this date).');
+      alert('Leave marked for all tasks.');
     } catch (err) {
       console.error('Failed to submit leave', err);
       alert('Error submitting leave.');
