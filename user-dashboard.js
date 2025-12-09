@@ -26,10 +26,9 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
   const todayStr = new Date().toISOString().slice(0, 10);
   dateInput.value = todayStr;
 
-  // index -> 'Yes' | 'No'
   const selectionState = new Map();
   let currentTasks = [];
-  let teamUsers = []; // teammates under same manager (for Assign dropdown)
+  let teamUsers = [];
 
   function escapeHtml(s) {
     return (s + '')
@@ -74,8 +73,9 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
       if (!res.ok) return;
       const data = await res.json();
       if (!data.success) return;
+
       const all = data.data || [];
-      teamUsers = all.filter((u) => u && u !== username);
+      teamUsers = all.filter((u) => u && u !== username); // remove self
     } catch (err) {
       console.error('Failed to load team users', err);
     }
@@ -116,14 +116,11 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
       body: JSON.stringify(payload)
     });
 
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const data = await res.json();
-    if (!data.success) {
-      throw new Error(data.error || 'Assign failed');
-    }
+    if (!data.success) throw new Error(data.error || 'Assign failed');
+
     return data;
   }
 
@@ -139,7 +136,6 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
     }
 
     taskMsgEl.textContent = '';
-
     const currentDate = dateInput.value || todayStr;
 
     tasks.forEach((t, index) => {
@@ -155,11 +151,8 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
 
       let metaLines = '';
 
-      if (isPendingRow) {
-        metaLines += `<span class="task-kind-pill">Previous Pending</span>`;
-      } else {
-        metaLines += `<span class="task-kind-pill">Today</span>`;
-      }
+      if (isPendingRow) metaLines += `<span class="task-kind-pill">Previous Pending</span>`;
+      else metaLines += `<span class="task-kind-pill">Today</span>`;
 
       if (isPendingRow && assignedDate) {
         metaLines += `<p class="task-pending">Pending from ${escapeHtml(assignedDate)}</p>`;
@@ -189,40 +182,35 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
       if (isLocked) {
         actionsHtml = `
           <div class="task-actions">
-            <span class="task-locked-msg">You have assigned this task to ${escapeHtml(
-              delegatedTo
-            )}.</span>
+            <span class="task-locked-msg">You have assigned this task to ${escapeHtml(delegatedTo)}.</span>
           </div>`;
       } else {
         const assignDropdownHtml = canAssign
           ? `
-            <div class="assign-ui hidden" data-index="${index}">
-              <select class="assign-select">
-                <option value="">-- Assign to --</option>
-                ${teamUsers
-                  .filter((u) => u !== username)
-                  .map(
-                    (u) => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`
-                  )
-                  .join('')}
-              </select>
-              <button class="assign-confirm" data-index="${index}">OK</button>
-              <button class="assign-cancel" data-index="${index}">Cancel</button>
-            </div>`
+          <div class="assign-ui hidden" data-index="${index}">
+            <select class="assign-select">
+              <option value="">-- Assign to --</option>
+              ${teamUsers
+                .map((u) => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`)
+                .join('')}
+            </select>
+            <button class="assign-confirm" data-index="${index}">OK</button>
+            <button class="assign-cancel" data-index="${index}">Cancel</button>
+          </div>`
           : '';
 
         actionsHtml = `
           <div class="task-actions">
             <button class="btn-yes"
               data-index="${index}"
-              data-task="${escapeHtml(t.task || '')}"
-              data-manager="${escapeHtml(t.manager || '')}"
+              data-task="${escapeHtml(t.task)}"
+              data-manager="${escapeHtml(t.manager)}"
               data-date="${escapeHtml(rowDate)}">Yes</button>
 
             <button class="btn-no"
               data-index="${index}"
-              data-task="${escapeHtml(t.task || '')}"
-              data-manager="${escapeHtml(t.manager || '')}"
+              data-task="${escapeHtml(t.task)}"
+              data-manager="${escapeHtml(t.manager)}"
               data-date="${escapeHtml(rowDate)}">No</button>
 
             ${canAssign ? `<button class="btn-assign" data-index="${index}">Assign</button>` : ''}
@@ -232,8 +220,8 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
 
       row.innerHTML = `
         <div class="meta">
-          <h4>${escapeHtml(t.task || '')}</h4>
-          <p class="manager-name">Manager: ${escapeHtml(t.manager || 'N/A')}</p>
+          <h4>${escapeHtml(t.task)}</h4>
+          <p class="manager-name">Manager: ${escapeHtml(t.manager || "N/A")}</p>
           ${metaLines}
         </div>
         ${actionsHtml}
@@ -253,36 +241,37 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
 
   taskListEl.addEventListener('click', async (e) => {
     try {
+      // Assign Confirm
       const assignConfirm = e.target.closest('.assign-confirm');
       if (assignConfirm) {
         const index = Number(assignConfirm.dataset.index);
         const panel = assignConfirm.closest('.assign-ui');
-        const selectEl = panel.querySelector('.assign-select');
-        const assignee = selectEl.value;
+        const select = panel.querySelector('.assign-select');
+        const assignee = select.value;
 
         if (!assignee) {
-          alert('Please select a user to assign this task.');
+          alert('Please select a user.');
           return;
         }
 
         const t = currentTasks[index];
         const dateForUpdate = t.date || dateInput.value || todayStr;
 
-        const msg = `Are you sure you want to assign "${t.task}" to "${assignee}" for ${dateForUpdate}?\n\nAfter assigning, you will not be able to mark Yes/No.`;
-        if (!confirm(msg)) return;
+        if (!confirm(`Assign "${t.task}" to "${assignee}" for ${dateForUpdate}?`)) return;
 
         await sendAssignRequest(t.task, t.manager, dateForUpdate, assignee);
         await fetchUserTasks();
         return;
       }
 
+      // Assign cancel
       const assignCancel = e.target.closest('.assign-cancel');
       if (assignCancel) {
-        const panel = assignCancel.closest('.assign-ui');
-        if (panel) panel.classList.add('hidden');
+        assignCancel.closest('.assign-ui').classList.add('hidden');
         return;
       }
 
+      // Assign open panel
       const assignBtn = e.target.closest('.btn-assign');
       if (assignBtn) {
         const index = Number(assignBtn.dataset.index);
@@ -292,6 +281,7 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
         return;
       }
 
+      // Yes / No
       const yesBtn = e.target.closest('.btn-yes');
       const noBtn = e.target.closest('.btn-no');
       if (!yesBtn && !noBtn) return;
@@ -306,7 +296,6 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
       const prevStatus = selectionState.get(index);
 
       const row = btn.closest('.task');
-
       row.querySelectorAll('.btn-yes, .btn-no').forEach((b) => b.classList.remove('selected'));
 
       if (prevStatus === newStatus) {
@@ -320,22 +309,18 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
       sendStatusUpdate(task, managerName, newStatus, dateForUpdate);
 
     } catch (err) {
-      console.error('Error handling click', err);
-      alert('Something went wrong. Please try again.');
+      console.error(err);
+      alert('Something went wrong.');
     }
   });
 
+  // Leave button
   leaveBtn.addEventListener('click', async () => {
-    const confirmLeave = confirm('Mark all tasks as No for this date?');
-    if (!confirmLeave) return;
+    if (!confirm('Mark all tasks as No for today?')) return;
 
     const dateStr = dateInput.value || todayStr;
 
-    const payload = {
-      username,
-      manager: '',
-      date: dateStr
-    };
+    const payload = { username, manager: '', date: dateStr };
 
     try {
       await fetch(`${API_BASE_URL}/api/leave`, {
@@ -345,9 +330,9 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
       });
 
       await fetchUserTasks();
-      alert('Leave marked for all tasks.');
+      alert('Leave marked.');
     } catch (err) {
-      console.error('Failed to submit leave', err);
+      console.error('Leave failed', err);
       alert('Error submitting leave.');
     }
   });
