@@ -101,13 +101,16 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
     }
   }
 
+  // <-- CHANGED: include assignedBy and action explicitly so backend definitely records who assigned -->
   async function sendAssignRequest(task, managerName, dateForUpdate, assignee) {
     const payload = {
-      username,
+      action: 'assignTask',
+      username,              // original owner (who is assigning)
       task,
       manager: managerName,
       date: dateForUpdate,
-      assignTo: assignee
+      assignTo: assignee,
+      assignedBy: username   // explicitly include assigner name
     };
 
     const res = await fetch(`${API_BASE_URL}/api/assign-task`, {
@@ -259,8 +262,15 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
 
         if (!confirm(`Assign "${t.task}" to "${assignee}" for ${dateForUpdate}?`)) return;
 
-        await sendAssignRequest(t.task, t.manager, dateForUpdate, assignee);
-        await fetchUserTasks();
+        try {
+          await sendAssignRequest(t.task, t.manager, dateForUpdate, assignee);
+          // hide the panel after success
+          panel.classList.add('hidden');
+          await fetchUserTasks();
+        } catch (err) {
+          console.error('Assign failed', err);
+          alert('Failed to assign task. Please try again.');
+        }
         return;
       }
 
