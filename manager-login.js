@@ -4,6 +4,19 @@
 // Add/remove managers here as needed.
 const managerCreds = [
   { username: 'AMITABHA GHOSH', password: 'amitabha123', fullname: 'Amitabha Ghosh' },
+  { username: 'KAMAL AGARWAL', password: 'kamal741', fullname: 'Kamal Agarwal' },
+  { username: 'UMESH AGARWAL', password: 'umesh943', fullname: 'Umesh Agarwal' },
+  { username: 'MANI', password: 'mani123', fullname: 'Mani' },
+  { username: 'BIDYUT', password: 'bidyut123', fullname: 'Bidyut' },
+  { username: 'SAMIR', password: 'samir123', fullname: 'Samir' },
+  { username: 'SUBHAJIT', password: 'subha123', fullname: 'Subhajit' },
+  { username: 'PRIYAM', password: 'priyam123', fullname: 'Priyam' },
+  { username: 'SANTU', password: 'santu123', fullname: 'Santu' },
+  { username: 'AMIT', password: 'amit123', fullname: 'AMIT' },
+  { username: 'MANOJ', password: 'manoj123', fullname: 'Manoj' },
+  { username: 'NITU', password: 'nitu123', fullname: 'Nitu Agarwal' },
+  { username: 'ARINDAM', password: 'arindam123', fullname: 'Arindam' }
+  
   // Example extra:
   // { username: 'RAHUL', password: 'rahul@123', fullname: 'Rahul Sharma' },
 ];

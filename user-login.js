@@ -2,7 +2,33 @@
 // Demo users - modify or extend
 const demoUsers = [
   { username: 'KOUSHIK PURAKAIT', password: 'K1234', fullName: 'Koushik Purakait' },
-  { username: 'SOURAV PAIK', password: 'S1234', fullName: 'Sourav Paik' }
+  { username: 'SOURAV PAIK', password: 'S1234', fullName: 'Sourav Paik' },
+  { username: 'NEHA', password: 'N1234', fullName: 'Neha' },
+  { username: 'MEGHNA', password: 'M1234', fullName: 'Meghna' },
+  { username: 'POULAMI', password: 'P1234', fullName: 'Poulami' },
+  { username: 'SHRIPARNA', password: 'S1234', fullName: 'Shriparna' },
+  { username: 'TRISHA', password: 'T1234', fullName: 'Trisha' },
+  { username: 'SUNANDA', password: 'S1234', fullName: 'SUNANDA' },
+  { username: 'MOUSUMI', password: 'M1234', fullName: 'Mousumi' },
+  { username: 'MOUMITA', password: 'M1234', fullName: 'Moumita' },
+  { username: 'BINOD', password: 'B1234', fullName: 'Binod Roy' },
+  { username: 'KHOKAN', password: 'K1234', fullName: 'Khokan Das' },
+  { username: 'MITHUN', password: 'M1234', fullName: 'Mithun Koner' },
+  { username: 'AMIT KUMAR', password: 'A1234', fullName: 'Amit Kumar Dana' },
+  { username: 'ARINDAM', password: 'A1234', fullName: 'Arindam Dalal' },
+  { username: 'BIJOY', password: 'B1234', fullName: 'Bijoy Mondal' },
+  { username: 'KOUSIK DUTTA', password: 'K1234', fullName: 'Kousik Dutta' },
+  { username: 'MANOJ', password: 'M1234', fullName: 'Manoj' },
+  { username: 'KOUSHIK DOLUI', password: 'K1234', fullName: 'Koushik Dolui' },
+  { username: 'SUBHADIP', password: 'S1234', fullName: 'Subhadip Ghosh' },
+  { username: 'SRIKANTA', password: 'S1234', fullName: 'Srikanta Pradhan' },
+  { username: 'DINESH', password: 'D1234', fullName: 'Dinesh Sahana' },
+  { username: 'RISHI', password: 'R1234', fullName: 'Rishi Gupta' },
+  { username: 'KANCHAN', password: 'K1234', fullName: 'Kanchan Saha' },
+  { username: 'SRIKANTA', password: 'S1234', fullName: 'Srikanta Das' },
+  { username: 'DEBASISH', password: 'D1234', fullName: 'Debasish Shyam' },
+  { username: 'ARUP', password: 'A1234', fullName: 'Arup Bhattarcharya' }
+  
 ];
 
 const loginForm = document.getElementById('loginForm');

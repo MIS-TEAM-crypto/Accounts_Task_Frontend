@@ -1,5 +1,5 @@
 // admin-login.js
-const adminCred = { username: 'admin', password: 'admin123', fullname: 'Administrator' };
+const adminCred = { username: 'admin', password: 'Admin@45971', fullname: 'Administrator' };
 const admForm = document.getElementById('admForm');
 const errA = document.getElementById('err');
 
