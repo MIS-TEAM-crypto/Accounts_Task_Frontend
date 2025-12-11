@@ -27,7 +27,10 @@ const demoUsers = [
   { username: 'KANCHAN', password: 'K1234', fullName: 'Kanchan Saha' },
   { username: 'SRIKANTA', password: 'S1234', fullName: 'Srikanta Das' },
   { username: 'DEBASISH', password: 'D1234', fullName: 'Debasish Shyam' },
-  { username: 'ARUP', password: 'A1234', fullName: 'Arup Bhattarcharya' }
+  { username: 'ARUP', password: 'A1234', fullName: 'Arup Bhattarcharya' },
+  { username: 'PRADIP', password: 'P1234', fullName: 'Pradip Das' },
+  { username: 'SAMIRON', password: 'S1234', fullName: 'Samiron Mondal' },
+  { username: 'SAMIR', password: 'S1234', fullName: 'Samir Majhi' }
   
 ];
 

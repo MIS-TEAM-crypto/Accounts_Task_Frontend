@@ -3,7 +3,7 @@
 // ===== MANAGER ACCOUNTS LIST =====
 // Add/remove managers here as needed.
 const managerCreds = [
-  { username: 'AMITABHA GHOSH', password: 'amitabha123', fullname: 'Amitabha Ghosh' },
+  { username: 'AMITAVA GHOSH', password: 'amitava123', fullname: 'Amitava Ghosh' },
   { username: 'KAMAL AGARWAL', password: 'kamal741', fullname: 'Kamal Agarwal' },
   { username: 'UMESH AGARWAL', password: 'umesh943', fullname: 'Umesh Agarwal' },
   { username: 'MANI', password: 'mani123', fullname: 'Mani' },
@@ -15,7 +15,8 @@ const managerCreds = [
   { username: 'AMIT', password: 'amit123', fullname: 'AMIT' },
   { username: 'MANOJ', password: 'manoj123', fullname: 'Manoj' },
   { username: 'NITU', password: 'nitu123', fullname: 'Nitu Agarwal' },
-  { username: 'ARINDAM', password: 'arindam123', fullname: 'Arindam' }
+  { username: 'ARINDAM', password: 'arindam123', fullname: 'Arindam' },
+  { username: 'SOMA', password: 'soma123', fullname: 'Soma' }
   
   // Example extra:
   // { username: 'RAHUL', password: 'rahul@123', fullname: 'Rahul Sharma' },
