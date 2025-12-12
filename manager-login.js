@@ -16,7 +16,8 @@ const managerCreds = [
   { username: 'MANOJ', password: 'manoj123', fullname: 'Manoj' },
   { username: 'NITU', password: 'nitu123', fullname: 'Nitu Agarwal' },
   { username: 'ARINDAM', password: 'arindam123', fullname: 'Arindam' },
-  { username: 'SOMA', password: 'soma123', fullname: 'Soma' }
+  { username: 'SOMA', password: 'soma123', fullname: 'Soma' },
+  { username: 'NIRAJ', password: 'niraj123', fullname: 'NIRAJ' }
   
   // Example extra:
   // { username: 'RAHUL', password: 'rahul@123', fullname: 'Rahul Sharma' },
