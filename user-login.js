@@ -21,16 +21,16 @@ const demoUsers = [
   { username: 'MANOJ', password: 'M1234', fullName: 'Manoj' },
   { username: 'KOUSHIK DOLUI', password: 'K1234', fullName: 'Koushik Dolui' },
   { username: 'SUBHADIP', password: 'S1234', fullName: 'Subhadip Ghosh' },
-  { username: 'SRIKANTA', password: 'S1234', fullName: 'Srikanta Pradhan' },
   { username: 'DINESH', password: 'D1234', fullName: 'Dinesh Sahana' },
   { username: 'RISHI', password: 'R1234', fullName: 'Rishi Gupta' },
   { username: 'KANCHAN', password: 'K1234', fullName: 'Kanchan Saha' },
-  { username: 'SRIKANTA', password: 'S1234', fullName: 'Srikanta Das' },
   { username: 'DEBASISH', password: 'D1234', fullName: 'Debasish Shyam' },
   { username: 'ARUP', password: 'A1234', fullName: 'Arup Bhattarcharya' },
   { username: 'PRADIP', password: 'P1234', fullName: 'Pradip Das' },
   { username: 'SAMIRON', password: 'S1234', fullName: 'Samiron Mondal' },
-  { username: 'SAMIR', password: 'S1234', fullName: 'Samir Majhi' }
+  { username: 'SAMIR', password: 'S1234', fullName: 'Samir Majhi' },
+  { username: 'SRIKANTA DAS', password: 'S1234', fullName: 'Srikanta Das' },
+  { username: 'SREEKANTA', password: 'S1234', fullName: 'Sreekanta Prodhan' }
   
 ];
 
