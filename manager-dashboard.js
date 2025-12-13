@@ -2,15 +2,28 @@
 const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
 
 (() => {
-  const role = sessionStorage.getItem('role');
-  if (role !== 'manager') {
-    sessionStorage.clear();
-    location.href = 'manager-login.html';
-    return;
-  }
+const role = sessionStorage.getItem('role');
+const isAdminViewing = !!sessionStorage.getItem('managerViewAs');
 
-  const fullname = sessionStorage.getItem('fullname') || 'Manager';
-  const managerName = fullname;
+// ✅ Allow admin when impersonating a manager
+if (role !== 'manager' && !isAdminViewing) {
+  sessionStorage.clear();
+  location.href = 'manager-login.html';
+  return;
+}
+
+
+// 🔐 Detect admin impersonation
+const impersonatedManager = sessionStorage.getItem('managerViewAs');
+
+const managerName =
+  impersonatedManager ||
+  sessionStorage.getItem('fullname') ||
+  'Manager';
+
+const displayName = impersonatedManager
+  ? `Admin (Viewing: ${managerName})`
+  : managerName;
 
   const greetEl = document.getElementById('greet');
   const dateInput = document.getElementById('taskDate');
@@ -20,7 +33,7 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
   const taskMsgEl = document.getElementById('taskMessage');
   const userFilter = document.getElementById('userFilter');
 
-  greetEl.textContent = `Hello, ${fullname}`;
+  greetEl.textContent = `Hello, ${displayName}`;
 
   const todayStr = new Date().toISOString().slice(0, 10);
   dateInput.value = todayStr;
@@ -406,10 +419,21 @@ const API_BASE_URL = 'https://accounts-task-backend-1.onrender.com';
   refreshBtn.addEventListener('click', fetchManagerTasks);
   userFilter.addEventListener('change', applyFiltersAndRender);
 
-  logoutBtn.addEventListener('click', () => {
+logoutBtn.addEventListener('click', () => {
+  const isAdminViewing = !!sessionStorage.getItem('managerViewAs');
+
+  if (isAdminViewing) {
+    // 🔁 Go back to admin manager selector
+    sessionStorage.removeItem('managerViewAs');
+    sessionStorage.setItem('role', 'admin');
+    location.href = 'superadmin-dashboard.html';
+  } else {
+    // 🔒 Normal manager logout
     sessionStorage.clear();
     location.href = 'index.html';
-  });
+  }
+});
+
 
   fetchManagerTasks();
 })();

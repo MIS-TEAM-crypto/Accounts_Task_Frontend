@@ -1,7 +1,13 @@
 // manager-login.js
 
-// ===== MANAGER ACCOUNTS LIST =====
-// Add/remove managers here as needed.
+// ===== ADMIN ACCOUNT =====
+const adminCreds = {
+  username: 'ADMIN',
+  password: 'admin@123',
+  fullname: 'System Admin'
+};
+
+// ===== MANAGER ACCOUNTS =====
 const managerCreds = [
   { username: 'AMITAVA GHOSH', password: 'amitava123', fullname: 'Amitava Ghosh' },
   { username: 'KAMAL AGARWAL', password: 'kamal741', fullname: 'Kamal Agarwal' },
@@ -18,57 +24,53 @@ const managerCreds = [
   { username: 'ARINDAM', password: 'arindam123', fullname: 'Arindam' },
   { username: 'SOMA', password: 'soma123', fullname: 'Soma' },
   { username: 'NIRAJ', password: 'niraj123', fullname: 'NIRAJ' }
-  
-  // Example extra:
-  // { username: 'RAHUL', password: 'rahul@123', fullname: 'Rahul Sharma' },
 ];
 
 const mgrForm = document.getElementById('mgrForm');
 const err = document.getElementById('err');
 
-mgrForm.addEventListener('submit', (ev) => {
-  ev.preventDefault();
+mgrForm.addEventListener('submit', (e) => {
+  e.preventDefault();
   err.textContent = '';
 
-  const u = document.getElementById('mgrUser').value.trim();
-  const p = document.getElementById('mgrPass').value;
+  const username = document.getElementById('mgrUser').value.trim();
+  const password = document.getElementById('mgrPass').value;
 
-  if (!u || !p) {
+  if (!username || !password) {
     err.textContent = 'Please enter username and password.';
     return;
   }
 
-  // Find matching manager (username case-insensitive, password exact)
-  const manager = managerCreds.find(m =>
-    m.username.toLowerCase() === u.toLowerCase() && m.password === p
+  // 🔐 ADMIN CHECK FIRST
+  if (
+    username.toUpperCase() === adminCreds.username &&
+    password === adminCreds.password
+  ) {
+    sessionStorage.clear();
+    sessionStorage.setItem('role', 'admin');
+    sessionStorage.setItem('fullname', adminCreds.fullname);
+    sessionStorage.removeItem('managerViewAs');
+
+    location.href = 'superadmin-dashboard.html';
+    return;
+  }
+
+  // 🔐 MANAGER LOGIN
+  const manager = managerCreds.find(
+    m =>
+      m.username.toLowerCase() === username.toLowerCase() &&
+      m.password === password
   );
 
-  if (manager) {
-    // Save logged-in manager info in sessionStorage
-    sessionStorage.setItem('role', 'manager');
-    sessionStorage.setItem('username', manager.username);
-    sessionStorage.setItem('fullname', manager.fullname);
-
-    // Optional: manager-specific tasks key (if your dashboard needs this)
-    // Example key: tasks_manager_SUBHANKAR
-    const taskKey = `tasks_manager_${manager.username}`;
-    if (!localStorage.getItem(taskKey)) {
-      localStorage.setItem(
-        taskKey,
-        JSON.stringify([
-          {
-            id: 1,
-            title: `Manager (${manager.fullname}): Review team tasks`,
-            desc: 'Check pending tasks',
-            done: false,
-          },
-        ])
-      );
-    }
-
-    // Redirect to manager dashboard
-    location.href = 'manager-dashboard.html';
-  } else {
-    err.textContent = 'Invalid manager credentials.';
+  if (!manager) {
+    err.textContent = 'Invalid credentials.';
+    return;
   }
+
+  sessionStorage.clear();
+  sessionStorage.setItem('role', 'manager');
+  sessionStorage.setItem('username', manager.username);
+  sessionStorage.setItem('fullname', manager.fullname);
+
+  location.href = 'manager-dashboard.html';
 });
