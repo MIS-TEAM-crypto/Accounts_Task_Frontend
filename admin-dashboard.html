@@ -8,35 +8,40 @@
 </head>
 
 <body>
-  <header class="hd">
-    <div class="wrap">
-      <h1 id="greet">Admin Score Dashboard</h1>
+<header class="hd">
+  <div class="wrap">
+    <h1 id="greet">Admin Score Dashboard</h1>
 
-      <div class="actions">
-        <button id="logoutBtn" class="btn small">Logout</button>
-      </div>
-
-      <div class="filters">
-        <select id="filterType">
-          <option value="day">Daily</option>
-          <option value="week">Weekly</option>
-          <option value="month">Monthly</option>
-        </select>
-
-        <input type="date" id="filterDate" />
-
-        <select id="filterUser"><option value="">All Users</option></select>
-        <select id="filterManager"><option value="">All Managers</option></select>
-
-        <button id="refreshBtn" class="btn small">Apply</button>
-      </div>
+    <div class="actions">
+      <button id="logoutBtn" class="btn small">Logout</button>
     </div>
-  </header>
 
-  <main class="wrap main">
-    <section id="scoreCards" class="card-grid"></section>
-  </main>
+    <div class="filters">
+      <select id="filterType">
+        <option value="day">Daily</option>
+        <option value="week">Weekly</option>
+        <option value="month">Monthly</option>
+        <option value="year">Yearly</option>
+      </select>
 
-  <script src="admin-dashboard.js"></script>
+      <input type="date" id="filterDate" />
+      <input type="month" id="monthPicker" style="display:none" />
+      <input type="number" id="yearPicker" min="2020" max="2100" style="display:none" />
+
+      <select id="filterUser"><option value="">All Users</option></select>
+      <select id="filterManager"><option value="">All Managers</option></select>
+
+      <button id="refreshBtn" class="btn small">Apply</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap main">
+  <section id="scoreCards" class="card-grid"></section>
+  <section id="monthlyTables" class="monthly-section"></section>
+  <section id="yearlyTables" class="monthly-section"></section>
+</main>
+
+<script src="admin-dashboard.js"></script>
 </body>
 </html>
