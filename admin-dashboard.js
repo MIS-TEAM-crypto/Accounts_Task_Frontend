@@ -62,41 +62,72 @@ const API = "https://accounts-task-backend-1.onrender.com";
   }
 
   /* ================= DATE RANGE ================= */
-  function computeDateRange() {
-    filterDate.style.display = "none";
-    monthPicker.style.display = "none";
-    yearPicker.style.display = "none";
+function computeDateRange() {
+  filterDate.style.display = "none";
+  monthPicker.style.display = "none";
+  yearPicker.style.display = "none";
 
-    if (filterType.value === "day") {
-      filterDate.style.display = "inline-block";
-      return { start: filterDate.value, end: filterDate.value };
-    }
-
-    if (filterType.value === "month") {
-      monthPicker.style.display = "inline-block";
-      const [y, m] = monthPicker.value.split("-");
-      return {
-        start: new Date(y, m - 1, 1).toISOString().slice(0, 10),
-        end: new Date(y, m, 0).toISOString().slice(0, 10)
-      };
-    }
-
-    if (filterType.value === "year") {
-      yearPicker.style.display = "inline-block";
-      const y = yearPicker.value;
-      return { start: `${y}-01-01`, end: `${y}-12-31` };
-    }
-
+  // DAILY
+  if (filterType.value === "day") {
+    filterDate.style.display = "inline-block";
     return { start: filterDate.value, end: filterDate.value };
   }
 
-  async function fetchRange(start, end) {
+  // WEEKLY ✅ FIXED
+  if (filterType.value === "week") {
+    filterDate.style.display = "inline-block";
+
+    const base = new Date(filterDate.value);
+    const day = base.getDay(); // 0 (Sun) - 6 (Sat)
+
+    // Monday as first day
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+
+    const monday = new Date(base);
+    monday.setDate(base.getDate() + diffToMonday);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    return {
+      start: monday.toISOString().slice(0, 10),
+      end: sunday.toISOString().slice(0, 10)
+    };
+  }
+
+  // MONTHLY
+  if (filterType.value === "month") {
+    monthPicker.style.display = "inline-block";
+    const [y, m] = monthPicker.value.split("-");
+    return {
+      start: new Date(y, m - 1, 1).toISOString().slice(0, 10),
+      end: new Date(y, m, 0).toISOString().slice(0, 10)
+    };
+  }
+
+  // YEARLY
+  if (filterType.value === "year") {
+    yearPicker.style.display = "inline-block";
+    const y = yearPicker.value;
+    return { start: `${y}-01-01`, end: `${y}-12-31` };
+  }
+
+  return { start: filterDate.value, end: filterDate.value };
+}
+
+/* ================= FETCH RANGE ================= */
+async function fetchRange(start, end) {
+  try {
     const res = await fetch(
       `${API}/api/all-status-range?start=${start}&end=${end}`
     );
     const json = await res.json();
     return json.data || [];
+  } catch (err) {
+    console.error("Fetch error:", err);
+    return [];
   }
+}
 
   /* ================= DROPDOWNS ================= */
   function fillDropdowns(rows, pu, pm) {
