@@ -615,3 +615,46 @@ body{
 
 .green { color: #16a34a; font-weight: 700; }
 .red { color: #dc2626; font-weight: 700; }
+
+.highlight-title{
+  font-size:18px;
+  font-weight:700;
+  margin-bottom:12px;
+  color:#4f46e5;
+}
+
+.yes{
+  color:#16a34a;
+  font-weight:700;
+}
+
+.no{
+  color:#dc2626;
+  font-weight:700;
+}
+
+.yn{
+  display:flex;
+  gap:12px;
+  margin:6px 0;
+}
+
+.inner-table{
+  width:100%;
+  background:#f9fafb;
+}
+
+.weekly-row{
+  display:none;
+}
+
+.weekly-row.open{
+  display:table-row;
+}
+
+.toggle{
+  background:none;
+  border:0;
+  cursor:pointer;
+  font-size:16px;
+}

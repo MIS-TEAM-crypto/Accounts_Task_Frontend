@@ -47,292 +47,500 @@ const API = "https://accounts-task-backend-1.onrender.com";
     fillDropdowns(rows, prevUser, prevManager);
     const filtered = applyUserFilters(rows);
 
-    if (filtered.length === 0) {
+    if (!filtered.length) {
       showNoDataMessage();
       return;
     }
 
-    if (filterType.value === "year") {
+    if (filterType.value === "day") {
+      renderDailyView(filtered);
+    } 
+    else if (filterType.value === "week") {
+      renderWeeklyView(filtered, start, end);
+    }
+    else if (filterType.value === "month") {
+      renderMonthlyView(filtered);
+    }
+    else {
       scoreCards.style.display = "none";
-      renderYearlyTables(filtered);
-    } else {
-      scoreCards.style.display = "grid";
-      renderCards(computeUserStats(filtered));
+      renderYearlyTables(filtered); // 🔒 unchanged
     }
   }
 
   /* ================= DATE RANGE ================= */
-function computeDateRange() {
-  filterDate.style.display = "none";
-  monthPicker.style.display = "none";
-  yearPicker.style.display = "none";
+  function computeDateRange() {
+    filterDate.style.display = "none";
+    monthPicker.style.display = "none";
+    yearPicker.style.display = "none";
 
-  // DAILY
-  if (filterType.value === "day") {
-    filterDate.style.display = "inline-block";
-    return { start: filterDate.value, end: filterDate.value };
+    if (filterType.value === "day") {
+      filterDate.style.display = "inline-block";
+      return { start: filterDate.value, end: filterDate.value };
+    }
+
+    if (filterType.value === "week") {
+      filterDate.style.display = "inline-block";
+      const base = new Date(filterDate.value);
+      const day = base.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      const monday = new Date(base);
+      monday.setDate(base.getDate() + diff);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      return {
+        start: monday.toISOString().slice(0,10),
+        end: sunday.toISOString().slice(0,10)
+      };
+    }
+
+    if (filterType.value === "month") {
+      monthPicker.style.display = "inline-block";
+      const [y,m] = monthPicker.value.split("-");
+      return {
+        start: new Date(y, m-1, 1).toISOString().slice(0,10),
+        end: new Date(y, m, 0).toISOString().slice(0,10)
+      };
+    }
+
+    if (filterType.value === "year") {
+      yearPicker.style.display = "inline-block";
+      return { start:`${yearPicker.value}-01-01`, end:`${yearPicker.value}-12-31` };
+    }
   }
 
-  // WEEKLY ✅ FIXED
-  if (filterType.value === "week") {
-    filterDate.style.display = "inline-block";
-
-    const base = new Date(filterDate.value);
-    const day = base.getDay(); // 0 (Sun) - 6 (Sat)
-
-    // Monday as first day
-    const diffToMonday = day === 0 ? -6 : 1 - day;
-
-    const monday = new Date(base);
-    monday.setDate(base.getDate() + diffToMonday);
-
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-
-    return {
-      start: monday.toISOString().slice(0, 10),
-      end: sunday.toISOString().slice(0, 10)
-    };
+  /* ================= FETCH ================= */
+  async function fetchRange(start,end){
+    try{
+      const res = await fetch(`${API}/api/all-status-range?start=${start}&end=${end}`);
+      const json = await res.json();
+      return json.data || [];
+    }catch(e){
+      console.error(e);
+      return [];
+    }
   }
-
-  // MONTHLY
-  if (filterType.value === "month") {
-    monthPicker.style.display = "inline-block";
-    const [y, m] = monthPicker.value.split("-");
-    return {
-      start: new Date(y, m - 1, 1).toISOString().slice(0, 10),
-      end: new Date(y, m, 0).toISOString().slice(0, 10)
-    };
-  }
-
-  // YEARLY
-  if (filterType.value === "year") {
-    yearPicker.style.display = "inline-block";
-    const y = yearPicker.value;
-    return { start: `${y}-01-01`, end: `${y}-12-31` };
-  }
-
-  return { start: filterDate.value, end: filterDate.value };
-}
-
-/* ================= FETCH RANGE ================= */
-async function fetchRange(start, end) {
-  try {
-    const res = await fetch(
-      `${API}/api/all-status-range?start=${start}&end=${end}`
-    );
-    const json = await res.json();
-    return json.data || [];
-  } catch (err) {
-    console.error("Fetch error:", err);
-    return [];
-  }
-}
 
   /* ================= DROPDOWNS ================= */
   function fillDropdowns(rows, pu, pm) {
-    const users = [...new Set(rows.map(r => r.username).filter(Boolean))];
-    const managers = [...new Set(rows.map(r => r.manager).filter(Boolean))];
+    const users = [...new Set(rows.map(r=>r.username).filter(Boolean))];
+    const managers = [...new Set(rows.map(r=>r.manager).filter(Boolean))];
 
-    filterUser.innerHTML =
-      `<option value="">All Users</option>` +
-      users.map(u => `<option>${u}</option>`).join("");
+    filterUser.innerHTML = `<option value="">All Users</option>` + users.map(u=>`<option>${u}</option>`).join("");
+    filterManager.innerHTML = `<option value="">All Managers</option>` + managers.map(m=>`<option>${m}</option>`).join("");
 
-    filterManager.innerHTML =
-      `<option value="">All Managers</option>` +
-      managers.map(m => `<option>${m}</option>`).join("");
-
-    if (pu) filterUser.value = pu;
-    if (pm) filterManager.value = pm;
+    if(pu) filterUser.value = pu;
+    if(pm) filterManager.value = pm;
   }
 
-  function applyUserFilters(rows) {
-    return rows.filter(r => {
-      if (filterUser.value && r.username !== filterUser.value) return false;
-      if (filterManager.value && r.manager !== filterManager.value) return false;
+  function applyUserFilters(rows){
+    return rows.filter(r=>{
+      if(filterUser.value && r.username!==filterUser.value) return false;
+      if(filterManager.value && r.manager!==filterManager.value) return false;
       return true;
     });
   }
 
-  /* ================= CARDS ================= */
-  function computeUserStats(rows) {
-    const map = {};
-    rows.forEach(r => {
-      const u = r.username;
-      map[u] ??= { yes: 0, no: 0, total: 0, score: 0 };
-      map[u].total++;
-      if (r.status === "Yes") { map[u].yes++; map[u].score++; }
-      if (r.status === "No") { map[u].no++; map[u].score--; }
-    });
-    return map;
-  }
+  /* ================= DAILY ================= */
+  function renderDailyView(rows){
+    scoreCards.style.display = "grid";
+    const dateLabel = `<div class="highlight-title">📅 ${filterDate.value}</div>`;
+    scoreCards.innerHTML = dateLabel;
 
-  function renderCards(stats) {
-    scoreCards.innerHTML = "";
-
-    Object.entries(stats).forEach(([u, s]) => {
-      const efficiency = ((s.yes / s.total) * 100 || 0).toFixed(1);
-      const delay = (100 - efficiency).toFixed(1);
-
-      const scoreClass =
-        s.score > 0 ? "score-positive" :
-        s.score < 0 ? "score-negative" :
-        "score-zero";
-
+    const stats = computeUserStats(rows,true);
+    Object.entries(stats).forEach(([u,s])=>{
       scoreCards.innerHTML += `
         <div class="card">
           <h2>${u}</h2>
-          <div class="score ${scoreClass}">${s.score}</div>
-          <div class="metric">📋 Total Tasks: <b>${s.total}</b></div>
-          <div class="metric">✅ Efficiency: <b>${efficiency}%</b></div>
-          <div class="metric delay">⏳ Delay: <b>${delay}%</b></div>
+          <div class="score">${s.score}</div>
+          <div class="yn">
+            <span class="yes">Yes: ${s.yes}</span>
+            <span class="no">No: ${s.no}</span>
+          </div>
+          <div>Total: ${s.total}</div>
+          <div>Efficiency: ${s.eff}%</div>
+          <div>Delay: ${s.delay}%</div>
         </div>`;
     });
-  }
-
-  /* ================= YEARLY TABLE ================= */
-  function renderYearlyTables(rows) {
-    const monthNames = [
-      "January","February","March","April","May","June",
-      "July","August","September","October","November","December"
-    ];
-
-    const users = [...new Set(rows.map(r => r.username))];
-
-    users.forEach(user => {
-      const userRows = rows.filter(r => r.username === user);
-      const months = {};
-
-      userRows.forEach(r => {
-        const d = new Date(r.date || r.task_date || r.created_at);
-        const m = d.getMonth();
-        months[m] ??= [];
-        months[m].push(r);
-      });
-
-      let tbody = "";
-
-      Object.entries(months).forEach(([m, rowsOfMonth]) => {
-        const stats = computeUserStats(rowsOfMonth)[user];
-        const efficiency = ((stats.yes / stats.total) * 100 || 0).toFixed(1);
-        const delay = (100 - efficiency).toFixed(1);
-
-        const scoreClass =
-          stats.score > 0 ? "green" :
-          stats.score < 0 ? "red" :
-          "neutral";
-
-        const key = `${user}-${m}`;
-
-        tbody += `
-          <tr>
-            <td>
-              <button class="toggle" data-key="${key}">➕</button>
-              ${monthNames[m]}
-            </td>
-            <td>${stats.total}</td>
-            <td class="${scoreClass}">${stats.score}</td>
-            <td class="green">${efficiency}%</td>
-            <td class="red">${delay}%</td>
-          </tr>
-          <tr class="weekly-row" data-key="${key}">
-            <td colspan="5">${renderWeeklyBreakdown(rowsOfMonth)}</td>
-          </tr>`;
-      });
-
-      yearlyTables.innerHTML += `
-        <div class="user-table">
-          <h3>${user} – ${yearPicker.value}</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Month</th>
-                <th>Total Tasks</th>
-                <th>Score</th>
-                <th>Efficiency</th>
-                <th>Delay</th>
-              </tr>
-            </thead>
-            <tbody>${tbody}</tbody>
-          </table>
-        </div>`;
-    });
-
-    bindToggleEvents();
   }
 
   /* ================= WEEKLY ================= */
-  function renderWeeklyBreakdown(rows) {
+  function renderWeeklyView(rows,start,end){
+    scoreCards.style.display="none";
+    const users=[...new Set(rows.map(r=>r.username))];
+
+    users.forEach(u=>{
+      const uRows=rows.filter(r=>r.username===u);
+      const days=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+      let map={};
+
+      uRows.forEach(r=>{
+        const d=new Date(r.date||r.task_date||r.created_at);
+        const idx=(d.getDay()+6)%7;
+        map[idx]??={yes:0,no:0,total:0,score:0,date:d};
+        map[idx].total++;
+        if(r.status==="Yes"){map[idx].yes++;map[idx].score++;}
+        if(r.status==="No"){map[idx].no++;map[idx].score--;}
+      });
+
+      let rowsHtml="";
+      days.forEach((day,i)=>{
+        const s=map[i]||{yes:0,no:0,total:0,score:0,date:""};
+        const eff=((s.yes/s.total)*100||0).toFixed(1);
+        rowsHtml+=`
+          <tr>
+            <td>${day}</td>
+            <td>${s.date?s.date.toISOString().slice(0,10):""}</td>
+            <td>${s.total}</td>
+            <td>${s.score}</td>
+            <td><span class="yes">${s.yes}</span> / <span class="no">${s.no}</span></td>
+            <td>${eff}%</td>
+            <td>${(100-eff).toFixed(1)}%</td>
+          </tr>`;
+      });
+
+      monthlyTables.innerHTML+=`
+        <div class="user-table">
+          <h3>${u} | Week (${start} → ${end})</h3>
+          <table>
+            <tr><th>Day</th><th>Date</th><th>Total</th><th>Score</th><th>Yes/No</th><th>Eff%</th><th>Delay%</th></tr>
+            ${rowsHtml}
+          </table>
+        </div>`;
+    });
+  }
+
+/* ================= MONTHLY ================= */
+function renderMonthlyView(rows){
+  scoreCards.style.display = "none";
+  monthlyTables.innerHTML = "";
+
+  const [year, month] = monthPicker.value.split("-").map(Number);
+  const monthName = new Date(year, month - 1).toLocaleString("default", { month: "long" });
+
+  /* 🔒 FILTER ROWS STRICTLY BY MONTH & YEAR */
+  const monthlyRows = rows.filter(r => {
+    const d = new Date((r.date || r.task_date || r.created_at) + "T00:00:00");
+    return d.getFullYear() === year && (d.getMonth() + 1) === month;
+  });
+
+  const users = [...new Set(monthlyRows.map(r => r.username))];
+
+  users.forEach(u => {
+    const uRows = monthlyRows.filter(r => r.username === u);
     const weeks = {};
 
-    rows.forEach(r => {
-      const d = new Date(r.date || r.task_date || r.created_at);
+    uRows.forEach(r => {
+      const d = new Date((r.date || r.task_date || r.created_at) + "T00:00:00");
+
+      /* Week calculation ONLY inside selected month */
       const week = Math.ceil(d.getDate() / 7);
 
-      weeks[week] ??= { yes: 0, no: 0, total: 0, score: 0 };
-      weeks[week].total++;
-
-      if (r.status === "Yes") { weeks[week].yes++; weeks[week].score++; }
-      if (r.status === "No") { weeks[week].no++; weeks[week].score--; }
+      weeks[week] ??= [];
+      weeks[week].push(r);
     });
 
-    let html = `<table class="inner-table">
-      <tr>
-        <th>Week</th>
-        <th>Total Tasks</th>
-        <th>Score</th>
-        <th>Efficiency</th>
-        <th>Delay</th>
-      </tr>`;
+    let html = "";
 
-    Object.entries(weeks).forEach(([w, s]) => {
-      const efficiency = ((s.yes / s.total) * 100 || 0).toFixed(1);
-      const delay = (100 - efficiency).toFixed(1);
-
-      const scoreClass =
-        s.score > 0 ? "green" :
-        s.score < 0 ? "red" :
-        "neutral";
+    Object.entries(weeks).sort((a,b)=>a[0]-b[0]).forEach(([w, rowsW]) => {
+      const stats = computeUserStats(rowsW, true)[u];
 
       html += `
         <tr>
-          <td>Week ${w}</td>
-          <td>${s.total}</td>
-          <td class="${scoreClass}">${s.score}</td>
-          <td class="green">${efficiency}%</td>
-          <td class="red">${delay}%</td>
+          <td><button class="toggle" data-key="${u}-${w}">➕</button> Week ${w}</td>
+          <td>${stats.total}</td>
+          <td>${stats.score}</td>
+          <td><span class="yes">${stats.yes}</span>/<span class="no">${stats.no}</span></td>
+          <td>${stats.eff}%</td>
+          <td>${stats.delay}%</td>
+        </tr>
+        <tr class="weekly-row" data-key="${u}-${w}">
+          <td colspan="6">${renderDailyTable(rowsW)}</td>
         </tr>`;
     });
 
-    return html + `</table>`;
+    monthlyTables.innerHTML += `
+      <div class="user-table">
+        <h3>${u} | ${monthName} (${year})</h3>
+        <table>
+          <tr>
+            <th>Week</th>
+            <th>Total</th>
+            <th>Score</th>
+            <th>Yes/No</th>
+            <th>Eff%</th>
+            <th>Delay%</th>
+          </tr>
+          ${html}
+        </table>
+      </div>`;
+  });
+
+  bindToggleEvents();
+}
+
+
+/* ================= DAILY TABLE ================= */
+function renderDailyTable(rows){
+  const map = {};
+
+  rows.forEach(r => {
+    const d = new Date((r.date || r.task_date || r.created_at) + "T00:00:00");
+    const key = d.toLocaleDateString("en-CA"); // YYYY-MM-DD
+
+    map[key] ??= { yes: 0, no: 0, total: 0, score: 0 };
+    map[key].total++;
+
+    if (r.status === "Yes") { map[key].yes++; map[key].score++; }
+    if (r.status === "No")  { map[key].no++;  map[key].score--; }
+  });
+
+  let html = `
+    <table class="inner-table">
+      <tr>
+        <th>Date</th>
+        <th>Total</th>
+        <th>Score</th>
+        <th>Yes/No</th>
+        <th>Eff%</th>
+        <th>Delay%</th>
+      </tr>`;
+
+  Object.entries(map)
+    .sort(([a],[b]) => a.localeCompare(b))
+    .forEach(([date, s]) => {
+      const eff = ((s.yes / s.total) * 100 || 0).toFixed(1);
+      html += `
+        <tr>
+          <td>${date}</td>
+          <td>${s.total}</td>
+          <td>${s.score}</td>
+          <td><span class="yes">${s.yes}</span>/<span class="no">${s.no}</span></td>
+          <td>${eff}%</td>
+          <td>${(100 - eff).toFixed(1)}%</td>
+        </tr>`;
+    });
+
+  return html + "</table>";
+}
+
+
+/* ================= WEEKLY → DAILY ================= */
+function renderWeeklyDailyTable(rows){
+  const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const map = {};
+
+  rows.forEach(r => {
+    const d = new Date((r.date || r.task_date || r.created_at) + "T00:00:00");
+    const idx = (d.getDay() + 6) % 7;
+
+    map[idx] ??= { yes: 0, no: 0, total: 0, score: 0, date: d };
+    map[idx].total++;
+
+    if (r.status === "Yes") { map[idx].yes++; map[idx].score++; }
+    if (r.status === "No")  { map[idx].no++;  map[idx].score--; }
+  });
+
+  let html = `
+    <table class="inner-table">
+      <tr>
+        <th>Day</th>
+        <th>Date</th>
+        <th>Total</th>
+        <th>Score</th>
+        <th>Yes/No</th>
+        <th>Eff%</th>
+        <th>Delay%</th>
+      </tr>`;
+
+  days.forEach((day, i) => {
+    const s = map[i] || { yes:0, no:0, total:0, score:0, date:null };
+    const eff = ((s.yes / s.total) * 100 || 0).toFixed(1);
+
+    html += `
+      <tr>
+        <td>${day}</td>
+        <td>${s.date ? s.date.toLocaleDateString("en-CA") : ""}</td>
+        <td>${s.total}</td>
+        <td>${s.score}</td>
+        <td><span class="yes">${s.yes}</span> / <span class="no">${s.no}</span></td>
+        <td>${eff}%</td>
+        <td>${(100 - eff).toFixed(1)}%</td>
+      </tr>`;
+  });
+
+  return html + "</table>";
+}
+
+  /* ================= STATS ================= */
+  function computeUserStats(rows,extra){
+    const map={};
+    rows.forEach(r=>{
+      const u=r.username;
+      map[u]??={yes:0,no:0,total:0,score:0};
+      map[u].total++;
+      if(r.status==="Yes"){map[u].yes++;map[u].score++;}
+      if(r.status==="No"){map[u].no++;map[u].score--;}
+    });
+
+    if(extra){
+      Object.values(map).forEach(s=>{
+        s.eff=((s.yes/s.total)*100||0).toFixed(1);
+        s.delay=(100-s.eff).toFixed(1);
+      });
+    }
+    return map;
   }
 
+  /* ================= YEARLY WEEKLY BREAKDOWN (RESTORED) ================= */
+function renderWeeklyBreakdown(rows) {
+  const weeks = {};
+
+  rows.forEach(r => {
+    const d = new Date((r.date || r.task_date || r.created_at) + "T00:00:00");
+    const w = Math.ceil(d.getDate() / 7);
+
+    weeks[w] ??= [];
+    weeks[w].push(r);
+  });
+
+  let html = `
+    <table class="inner-table">
+      <tr>
+        <th>Week</th>
+        <th>Total</th>
+        <th>Score</th>
+        <th>Efficiency</th>
+        <th>Delay</th>
+      </tr>
+  `;
+
+  Object.entries(weeks).forEach(([w, rowsW]) => {
+    const stats = computeUserStats(rowsW)[Object.keys(computeUserStats(rowsW))[0]];
+    const eff = ((stats.yes / stats.total) * 100 || 0).toFixed(1);
+    const delay = (100 - eff).toFixed(1);
+
+    const scoreClass =
+      stats.score > 0 ? "green" :
+      stats.score < 0 ? "red" :
+      "neutral";
+
+    const key = `year-week-${w}-${Math.random()}`;
+
+    html += `
+      <tr>
+        <td>
+          <button class="toggle" data-key="${key}">➕</button>
+          Week ${w}
+        </td>
+        <td>${stats.total}</td>
+        <td class="${scoreClass}">${stats.score}</td>
+        <td class="green">${eff}%</td>
+        <td class="red">${delay}%</td>
+      </tr>
+      <tr class="weekly-row" data-key="${key}">
+        <td colspan="5">
+          ${renderWeeklyDailyTable(rowsW)}
+        </td>
+      </tr>
+    `;
+  });
+
+  return html + `</table>`;
+}
+
+
+  /* ================= YEARLY (UNCHANGED) ================= */
+function renderYearlyTables(rows) {
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const users = [...new Set(rows.map(r => r.username))];
+
+  users.forEach(user => {
+    const userRows = rows.filter(r => r.username === user);
+
+    const months = {};
+    userRows.forEach(r => {
+      const d = new Date((r.date || r.task_date || r.created_at) + "T00:00:00");
+      const m = d.getMonth();
+      months[m] ??= [];
+      months[m].push(r);
+    });
+
+    let tbody = "";
+
+    Object.entries(months).forEach(([m, rowsOfMonth]) => {
+      const stats = computeUserStats(rowsOfMonth)[user];
+
+      const efficiency = ((stats.yes / stats.total) * 100 || 0).toFixed(1);
+      const delay = (100 - efficiency).toFixed(1);
+
+      const scoreClass =
+        stats.score > 0 ? "green" :
+        stats.score < 0 ? "red" :
+        "neutral";
+
+      const key = `${user}-${m}`;
+
+      tbody += `
+        <tr>
+          <td>
+            <button class="toggle" data-key="${key}">➕</button>
+            ${monthNames[m]}
+          </td>
+          <td>${stats.total}</td>
+          <td class="${scoreClass}">${stats.score}</td>
+          <td class="green">${efficiency}%</td>
+          <td class="red">${delay}%</td>
+        </tr>
+        <tr class="weekly-row" data-key="${key}">
+          <td colspan="5">
+            ${renderWeeklyBreakdown(rowsOfMonth)}
+          </td>
+        </tr>
+      `;
+    });
+
+    yearlyTables.innerHTML += `
+      <div class="user-table">
+        <h3>${user} – ${yearPicker.value}</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Total Tasks</th>
+              <th>Score</th>
+              <th>Efficiency</th>
+              <th>Delay</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tbody}
+          </tbody>
+        </table>
+      </div>
+    `;
+  });
+
+  bindToggleEvents();
+}
+
+
   /* ================= TOGGLE ================= */
-  function bindToggleEvents() {
-    document.querySelectorAll(".toggle").forEach(btn => {
-      btn.onclick = () => {
-        const key = btn.dataset.key;
-        const row = document.querySelector(`.weekly-row[data-key="${key}"]`);
-        const open = row.classList.toggle("open");
-        btn.textContent = open ? "➖" : "➕";
+  function bindToggleEvents(){
+    document.querySelectorAll(".toggle").forEach(btn=>{
+      btn.onclick=()=>{
+        const row=document.querySelector(`.weekly-row[data-key="${btn.dataset.key}"]`);
+        const open=row.classList.toggle("open");
+        btn.textContent=open?"➖":"➕";
       };
     });
   }
 
-  /* ================= NO DATA ================= */
-  function showNoDataMessage() {
-    const msg =
-      filterType.value === "day"
-        ? "No data available for this day."
-        : filterType.value === "month"
-        ? "No data available for this month."
-        : "No data available for this year.";
-
-    if (filterType.value === "year") {
-      yearlyTables.innerHTML = `<p class="no-data">${msg}</p>`;
-    } else {
-      scoreCards.innerHTML = `<p class="no-data">${msg}</p>`;
-    }
+  function showNoDataMessage(){
+    scoreCards.innerHTML=`<p class="no-data">No data available</p>`;
   }
 
   loadScores();
