@@ -1,5 +1,7 @@
 const API = "https://accounts-task-backend-1.onrender.com";
 
+let taskTotals = {};
+
 (() => {
   const role = sessionStorage.getItem("role");
   if (role !== "admin") {
@@ -42,7 +44,13 @@ const API = "https://accounts-task-backend-1.onrender.com";
     const prevManager = filterManager.value;
 
     const { start, end } = computeDateRange();
-    const rows = await fetchRange(start, end);
+    const [rows, totals] = await Promise.all([
+    fetchRange(start, end),
+    fetchTaskTotals()
+    ]);
+
+    taskTotals = totals; // ✅ assign to global
+
 
     fillDropdowns(rows, prevUser, prevManager);
     const filtered = applyUserFilters(rows);
@@ -120,6 +128,25 @@ const API = "https://accounts-task-backend-1.onrender.com";
     }
   }
 
+  // ===== FETCH TASK TOTALS (FROM TASKS SHEET) =====
+async function fetchTaskTotals() {
+  try {
+    const res = await fetch(`${API}/api/task-totals`);
+    const json = await res.json();
+
+    const map = {};
+    (json.data || []).forEach(r => {
+      map[r.username] = r.total;
+    });
+
+    return map;
+  } catch (e) {
+    console.error("Task totals fetch failed", e);
+    return {};
+  }
+}
+
+
   /* ================= DROPDOWNS ================= */
   function fillDropdowns(rows, pu, pm) {
     const users = [...new Set(rows.map(r=>r.username).filter(Boolean))];
@@ -146,7 +173,7 @@ const API = "https://accounts-task-backend-1.onrender.com";
     const dateLabel = `<div class="highlight-title">📅 ${filterDate.value}</div>`;
     scoreCards.innerHTML = dateLabel;
 
-    const stats = computeUserStats(rows,true);
+    const stats = computeUserStats(rows, taskTotals, true);
     Object.entries(stats).forEach(([u,s])=>{
       scoreCards.innerHTML += `
         <div class="card">
@@ -176,8 +203,13 @@ const API = "https://accounts-task-backend-1.onrender.com";
       uRows.forEach(r=>{
         const d=new Date(r.date||r.task_date||r.created_at);
         const idx=(d.getDay()+6)%7;
-        map[idx]??={yes:0,no:0,total:0,score:0,date:d};
-        map[idx].total++;
+        map[idx] ??= {
+          yes: 0,
+          no: 0,
+          total: taskTotals[u] || 0, // ✅ FROM TASKS SHEET
+          score: 0,
+          date: d
+        };
         if(r.status==="Yes"){map[idx].yes++;map[idx].score++;}
         if(r.status==="No"){map[idx].no++;map[idx].score--;}
       });
@@ -242,7 +274,13 @@ function renderMonthlyView(rows){
     let html = "";
 
     Object.entries(weeks).sort((a,b)=>a[0]-b[0]).forEach(([w, rowsW]) => {
-      const stats = computeUserStats(rowsW, true)[u];
+      const stats = computeUserStats(rowsW, taskTotals, true)[u];
+
+        stats.total = sumDailyTotals(rowsW);
+        stats.eff = ((stats.yes / stats.total) * 100 || 0).toFixed(1);
+        stats.delay = (100 - stats.eff).toFixed(1);
+
+        ;
 
       html += `
         <tr>
@@ -287,8 +325,12 @@ function renderDailyTable(rows){
     const d = new Date((r.date || r.task_date || r.created_at) + "T00:00:00");
     const key = d.toLocaleDateString("en-CA"); // YYYY-MM-DD
 
-    map[key] ??= { yes: 0, no: 0, total: 0, score: 0 };
-    map[key].total++;
+    map[key] ??= {
+      yes: 0,
+      no: 0,
+      total: taskTotals[r.username] || 0, // ✅ FIX
+      score: 0
+    };
 
     if (r.status === "Yes") { map[key].yes++; map[key].score++; }
     if (r.status === "No")  { map[key].no++;  map[key].score--; }
@@ -333,8 +375,13 @@ function renderWeeklyDailyTable(rows){
     const d = new Date((r.date || r.task_date || r.created_at) + "T00:00:00");
     const idx = (d.getDay() + 6) % 7;
 
-    map[idx] ??= { yes: 0, no: 0, total: 0, score: 0, date: d };
-    map[idx].total++;
+    map[idx] ??= {
+      yes: 0,
+      no: 0,
+      total: taskTotals[r.username] || 0, // ✅ FIX
+      score: 0,
+      date: d
+    };
 
     if (r.status === "Yes") { map[idx].yes++; map[idx].score++; }
     if (r.status === "No")  { map[idx].no++;  map[idx].score--; }
@@ -371,25 +418,70 @@ function renderWeeklyDailyTable(rows){
   return html + "</table>";
 }
 
-  /* ================= STATS ================= */
-  function computeUserStats(rows,extra){
-    const map={};
-    rows.forEach(r=>{
-      const u=r.username;
-      map[u]??={yes:0,no:0,total:0,score:0};
-      map[u].total++;
-      if(r.status==="Yes"){map[u].yes++;map[u].score++;}
-      if(r.status==="No"){map[u].no++;map[u].score--;}
-    });
+/* ================= HELPERS ================= */
+function sumDailyTotals(rows) {
+  const perDay = {};
 
-    if(extra){
-      Object.values(map).forEach(s=>{
-        s.eff=((s.yes/s.total)*100||0).toFixed(1);
-        s.delay=(100-s.eff).toFixed(1);
-      });
+  rows.forEach(r => {
+    const date = new Date(
+      (r.date || r.task_date || r.created_at) + "T00:00:00"
+    ).toLocaleDateString("en-CA");
+
+    // Daily total must come from Tasks sheet
+    perDay[date] = taskTotals[r.username] || 0;
+  });
+
+  return Object.values(perDay).reduce((a, b) => a + b, 0);
+}
+
+
+  /* ================= STATS ================= */
+  function computeUserStats(rows, taskTotals, extra) {
+  const map = {};
+
+  rows.forEach(r => {
+    const u = r.username;
+    if (!u) return;
+
+    map[u] ??= {
+      yes: 0,
+      no: 0,
+      total: taskTotals[u] || 0, // ✅ FROM TASKS SHEET
+      score: 0
+    };
+
+    if (r.status === "Yes") {
+      map[u].yes++;
+      map[u].score++;
     }
-    return map;
+
+    if (r.status === "No") {
+      map[u].no++;
+      map[u].score--;
+    }
+  });
+
+  // Users who have tasks but no status entries yet
+  Object.keys(taskTotals).forEach(u => {
+    map[u] ??= {
+      yes: 0,
+      no: 0,
+      total: taskTotals[u],
+      score: 0
+    };
+  });
+
+  if (extra) {
+    Object.values(map).forEach(s => {
+      s.eff = ((s.yes / s.total) * 100 || 0).toFixed(1);
+      s.delay = (100 - s.eff).toFixed(1);
+      s.pending = s.total - (s.yes + s.no);
+    });
   }
+
+  return map;
+}
+
 
   /* ================= YEARLY WEEKLY BREAKDOWN (RESTORED) ================= */
 function renderWeeklyBreakdown(rows) {
@@ -415,7 +507,11 @@ function renderWeeklyBreakdown(rows) {
   `;
 
   Object.entries(weeks).forEach(([w, rowsW]) => {
-    const stats = computeUserStats(rowsW)[Object.keys(computeUserStats(rowsW))[0]];
+    const allStats = computeUserStats(rowsW, taskTotals, true);
+    const stats = allStats[Object.keys(allStats)[0]];
+
+    stats.total = sumDailyTotals(rowsW);
+
     const eff = ((stats.yes / stats.total) * 100 || 0).toFixed(1);
     const delay = (100 - eff).toFixed(1);
 
@@ -472,7 +568,10 @@ function renderYearlyTables(rows) {
     let tbody = "";
 
     Object.entries(months).forEach(([m, rowsOfMonth]) => {
-      const stats = computeUserStats(rowsOfMonth)[user];
+      const stats = computeUserStats(rowsOfMonth, taskTotals, true)[user];
+
+      stats.total = sumDailyTotals(rowsOfMonth);
+
 
       const efficiency = ((stats.yes / stats.total) * 100 || 0).toFixed(1);
       const delay = (100 - efficiency).toFixed(1);
