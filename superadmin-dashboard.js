@@ -15,7 +15,8 @@ const managers = [
   'Nitu Agarwal',
   'Arindam',
   'Soma',
-  'NIRAJ'
+  'NIRAJ',
+  'SEUSREE'
 ];
 
 (() => {
