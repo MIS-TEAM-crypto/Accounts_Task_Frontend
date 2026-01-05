@@ -1,6 +1,10 @@
 const API = "https://accounts-task-backend-1.onrender.com";
 
 let taskTotals = {};
+let dropdownInitialized = false;
+let allUsersManagers = { users: [], managers: [] };
+
+
 
 (() => {
   const role = sessionStorage.getItem("role");
@@ -52,8 +56,13 @@ let taskTotals = {};
     taskTotals = totals; // ✅ assign to global
 
 
-    fillDropdowns(rows, prevUser, prevManager);
-    const filtered = applyUserFilters(rows);
+if (!dropdownInitialized) {
+  fillDropdowns();
+  dropdownInitialized = true;
+}
+
+const filtered = applyUserFilters(rows);
+
 
     if (!filtered.length) {
       showNoDataMessage();
@@ -146,18 +155,42 @@ async function fetchTaskTotals() {
   }
 }
 
+// ===== FETCH ALL USERS & MANAGERS (MASTER DATA) =====
+async function fetchAllUsersManagers() {
+  try {
+    const res = await fetch(`${API}/api/all-status-range`);
+    const json = await res.json();
+    const data = json.data || [];
+
+    allUsersManagers.users = [
+      ...new Set(data.map(r => r.username).filter(Boolean))
+    ];
+
+    allUsersManagers.managers = [
+      ...new Set(data.map(r => r.manager).filter(Boolean))
+    ];
+  } catch (e) {
+    console.error("Failed to fetch users/managers", e);
+  }
+}
+
 
   /* ================= DROPDOWNS ================= */
-  function fillDropdowns(rows, pu, pm) {
-    const users = [...new Set(rows.map(r=>r.username).filter(Boolean))];
-    const managers = [...new Set(rows.map(r=>r.manager).filter(Boolean))];
+function fillDropdowns() {
+  filterUser.innerHTML =
+    `<option value="">All Users</option>` +
+    allUsersManagers.users.map(u =>
+      `<option value="${u}">${u}</option>`
+    ).join("");
 
-    filterUser.innerHTML = `<option value="">All Users</option>` + users.map(u=>`<option>${u}</option>`).join("");
-    filterManager.innerHTML = `<option value="">All Managers</option>` + managers.map(m=>`<option>${m}</option>`).join("");
+  filterManager.innerHTML =
+    `<option value="">All Managers</option>` +
+    allUsersManagers.managers.map(m =>
+      `<option value="${m}">${m}</option>`
+    ).join("");
+}
 
-    if(pu) filterUser.value = pu;
-    if(pm) filterManager.value = pm;
-  }
+
 
   function applyUserFilters(rows){
     return rows.filter(r=>{
@@ -461,15 +494,7 @@ function sumDailyTotals(rows) {
     }
   });
 
-  // Users who have tasks but no status entries yet
-  Object.keys(taskTotals).forEach(u => {
-    map[u] ??= {
-      yes: 0,
-      no: 0,
-      total: taskTotals[u],
-      score: 0
-    };
-  });
+
 
   if (extra) {
     Object.values(map).forEach(s => {
@@ -638,9 +663,28 @@ function renderYearlyTables(rows) {
     });
   }
 
-  function showNoDataMessage(){
-    scoreCards.innerHTML=`<p class="no-data">No data available</p>`;
-  }
+function showNoDataMessage() {
+  const msg = `<p class="no-data">No data available</p>`;
 
-  loadScores();
+  scoreCards.innerHTML = "";
+  monthlyTables.innerHTML = "";
+  yearlyTables.innerHTML = "";
+
+  if (filterType.value === "day") {
+    scoreCards.innerHTML = msg;
+  }
+  else if (filterType.value === "week" || filterType.value === "month") {
+    monthlyTables.innerHTML = msg;
+  }
+  else if (filterType.value === "year") {
+    yearlyTables.innerHTML = msg;
+  }
+}
+
+
+  (async () => {
+  await fetchAllUsersManagers();  // ✅ STEP 3: CALL IT HERE
+  loadScores();                   // existing
+})();
+
 })();
