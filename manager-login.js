@@ -24,7 +24,8 @@ const managerCreds = [
   { username: 'ARINDAM', password: 'arindam123', fullname: 'Arindam' },
   { username: 'SOMA', password: 'soma123', fullname: 'Soma' },
   { username: 'NIRAJ', password: 'niraj123', fullname: 'NIRAJ' },
-  { username: 'SEUSREE', password: 'seusree123', fullname: 'Seusree Das Ghosh' }
+  { username: 'SEUSREE', password: 'seusree123', fullname: 'Seusree Das Ghosh' },
+  { username: 'RAHUL', password: 'rahul123', fullname: 'Rahul Bharpilania' }
 ];
 
 const mgrForm = document.getElementById('mgrForm');

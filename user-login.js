@@ -31,7 +31,8 @@ const demoUsers = [
   { username: 'SAMIR', password: 'S1234', fullName: 'Samir Majhi' },
   { username: 'SRIKANTA DAS', password: 'S1234', fullName: 'Srikanta Das' },
   { username: 'SREEKANTA', password: 'S1234', fullName: 'Sreekanta Prodhan' },
-  { username: 'SOMA', password: 'S1234', fullName: 'Soma Adhikari' }
+  { username: 'SOMA', password: 'S1234', fullName: 'Soma Adhikari' },
+  { username: 'CHANDAN', password: 'C1234', fullName: 'Chandan Maity' }
   
 ];
 
