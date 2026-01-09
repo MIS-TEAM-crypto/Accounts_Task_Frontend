@@ -224,55 +224,65 @@ function fillDropdowns() {
   }
 
   /* ================= WEEKLY ================= */
-  function renderWeeklyView(rows,start,end){
-    scoreCards.style.display="none";
-    const users=[...new Set(rows.map(r=>r.username))];
+function renderWeeklyView(rows,start,end){
+  scoreCards.style.display="none";
+  monthlyTables.innerHTML="";
 
-    users.forEach(u=>{
-      const uRows=rows.filter(r=>r.username===u);
-      const days=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-      let map={};
+  const users=[...new Set(rows.map(r=>r.username))];
 
-      uRows.forEach(r=>{
-        const d=new Date(r.date||r.task_date||r.created_at);
-        const idx=(d.getDay()+6)%7;
-        map[idx] ??= {
-          yes: 0,
-          no: 0,
-          total: taskTotals[u] || 0, // ✅ FROM TASKS SHEET
-          score: 0,
-          date: d
-        };
-        if(r.status==="Yes"){map[idx].yes++;map[idx].score++;}
-        if(r.status==="No"){map[idx].no++;map[idx].score--;}
-      });
+  users.forEach(u=>{
+    const uRows=rows.filter(r=>r.username===u);
+    const days=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+    let map={};
 
-      let rowsHtml="";
-      days.forEach((day,i)=>{
-        const s=map[i]||{yes:0,no:0,total:0,score:0,date:""};
-        const eff=((s.yes/s.total)*100||0).toFixed(1);
-        rowsHtml+=`
-          <tr>
-            <td>${day}</td>
-            <td>${s.date?s.date.toISOString().slice(0,10):""}</td>
-            <td>${s.total}</td>
-            <td>${s.score}</td>
-            <td><span class="yes">${s.yes}</span> / <span class="no">${s.no}</span></td>
-            <td>${eff}%</td>
-            <td>${(100-eff).toFixed(1)}%</td>
-          </tr>`;
-      });
+    uRows.forEach(r=>{
+      const d=new Date((r.date||r.task_date||r.created_at)+"T00:00:00");
+      const idx=(d.getDay()+6)%7;
 
-      monthlyTables.innerHTML+=`
-        <div class="user-table">
-          <h3>${u} | Week (${start} → ${end})</h3>
-          <table>
-            <tr><th>Day</th><th>Date</th><th>Total</th><th>Score</th><th>Yes/No</th><th>Eff%</th><th>Delay%</th></tr>
-            ${rowsHtml}
-          </table>
-        </div>`;
+      map[idx] ??= {
+        yes: 0,
+        no: 0,
+        total: taskTotals[u] || 0,
+        score: 0,
+        date: d
+      };
+
+      if(r.status==="Yes"){ map[idx].yes++; map[idx].score++; }
+      if(r.status==="No"){ map[idx].no++; map[idx].score--; }
     });
-  }
+
+    let rowsHtml="";
+    days.forEach((day,i)=>{
+      const s=map[i]||{yes:0,no:0,total:0,score:0,date:""};
+
+      const eff=((s.yes/s.total)*100||0).toFixed(1);
+      const delay=((s.no/s.total)*100||0).toFixed(1); // ✅ FIX
+
+      rowsHtml+=`
+        <tr>
+          <td>${day}</td>
+          <td>${s.date?s.date.toISOString().slice(0,10):""}</td>
+          <td>${s.total}</td>
+          <td>${s.score}</td>
+          <td><span class="yes">${s.yes}</span> / <span class="no">${s.no}</span></td>
+          <td>${eff}%</td>
+          <td>${delay}%</td>
+        </tr>`;
+    });
+
+    monthlyTables.innerHTML+=`
+      <div class="user-table">
+        <h3>${u} | Week (${start} → ${end})</h3>
+        <table>
+          <tr>
+            <th>Day</th><th>Date</th><th>Total</th>
+            <th>Score</th><th>Yes/No</th><th>Eff%</th><th>Delay%</th>
+          </tr>
+          ${rowsHtml}
+        </table>
+      </div>`;
+  });
+}
 
 /* ================= MONTHLY ================= */
 function renderMonthlyView(rows){
@@ -311,7 +321,7 @@ function renderMonthlyView(rows){
 
         stats.total = sumDailyTotals(rowsW);
         stats.eff = ((stats.yes / stats.total) * 100 || 0).toFixed(1);
-        stats.delay = (100 - stats.eff).toFixed(1);
+        stats.delay = ((stats.no / stats.total) * 100 || 0).toFixed(1);
 
         ;
 
@@ -356,17 +366,24 @@ function renderDailyTable(rows){
 
   rows.forEach(r => {
     const d = new Date((r.date || r.task_date || r.created_at) + "T00:00:00");
-    const key = d.toLocaleDateString("en-CA"); // YYYY-MM-DD
+    const key = d.toLocaleDateString("en-CA");
 
     map[key] ??= {
       yes: 0,
       no: 0,
-      total: taskTotals[r.username] || 0, // ✅ FIX
+      total: taskTotals[r.username] || 0,
       score: 0
     };
 
-    if (r.status === "Yes") { map[key].yes++; map[key].score++; }
-    if (r.status === "No")  { map[key].no++;  map[key].score--; }
+    if (r.status === "Yes") {
+      map[key].yes++;
+      map[key].score++;
+    }
+
+    if (r.status === "No") {
+      map[key].no++;
+      map[key].score--;
+    }
   });
 
   let html = `
@@ -384,14 +401,19 @@ function renderDailyTable(rows){
     .sort(([a],[b]) => a.localeCompare(b))
     .forEach(([date, s]) => {
       const eff = ((s.yes / s.total) * 100 || 0).toFixed(1);
+      const delay = ((s.no / s.total) * 100 || 0).toFixed(1); // ✅ FIX
+
       html += `
         <tr>
           <td>${date}</td>
           <td>${s.total}</td>
           <td>${s.score}</td>
-          <td><span class="yes">${s.yes}</span>/<span class="no">${s.no}</span></td>
+          <td>
+            <span class="yes">${s.yes}</span> /
+            <span class="no">${s.no}</span>
+          </td>
           <td>${eff}%</td>
-          <td>${(100 - eff).toFixed(1)}%</td>
+          <td>${delay}%</td>
         </tr>`;
     });
 
@@ -401,7 +423,11 @@ function renderDailyTable(rows){
 
 /* ================= WEEKLY → DAILY ================= */
 function renderWeeklyDailyTable(rows){
-  const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const days = [
+    "Monday","Tuesday","Wednesday",
+    "Thursday","Friday","Saturday","Sunday"
+  ];
+
   const map = {};
 
   rows.forEach(r => {
@@ -411,13 +437,20 @@ function renderWeeklyDailyTable(rows){
     map[idx] ??= {
       yes: 0,
       no: 0,
-      total: taskTotals[r.username] || 0, // ✅ FIX
+      total: taskTotals[r.username] || 0,
       score: 0,
       date: d
     };
 
-    if (r.status === "Yes") { map[idx].yes++; map[idx].score++; }
-    if (r.status === "No")  { map[idx].no++;  map[idx].score--; }
+    if (r.status === "Yes") {
+      map[idx].yes++;
+      map[idx].score++;
+    }
+
+    if (r.status === "No") {
+      map[idx].no++;
+      map[idx].score--;
+    }
   });
 
   let html = `
@@ -433,8 +466,16 @@ function renderWeeklyDailyTable(rows){
       </tr>`;
 
   days.forEach((day, i) => {
-    const s = map[i] || { yes:0, no:0, total:0, score:0, date:null };
+    const s = map[i] || {
+      yes: 0,
+      no: 0,
+      total: 0,
+      score: 0,
+      date: null
+    };
+
     const eff = ((s.yes / s.total) * 100 || 0).toFixed(1);
+    const delay = ((s.no / s.total) * 100 || 0).toFixed(1); // ✅ FIX
 
     html += `
       <tr>
@@ -442,14 +483,18 @@ function renderWeeklyDailyTable(rows){
         <td>${s.date ? s.date.toLocaleDateString("en-CA") : ""}</td>
         <td>${s.total}</td>
         <td>${s.score}</td>
-        <td><span class="yes">${s.yes}</span> / <span class="no">${s.no}</span></td>
+        <td>
+          <span class="yes">${s.yes}</span> /
+          <span class="no">${s.no}</span>
+        </td>
         <td>${eff}%</td>
-        <td>${(100 - eff).toFixed(1)}%</td>
+        <td>${delay}%</td>
       </tr>`;
   });
 
   return html + "</table>";
 }
+
 
 /* ================= HELPERS ================= */
 function sumDailyTotals(rows) {
@@ -499,8 +544,9 @@ function sumDailyTotals(rows) {
   if (extra) {
     Object.values(map).forEach(s => {
       s.eff = ((s.yes / s.total) * 100 || 0).toFixed(1);
-      s.delay = (100 - s.eff).toFixed(1);
+      s.delay = ((s.no / s.total) * 100 || 0).toFixed(1);
       s.pending = s.total - (s.yes + s.no);
+
     });
   }
 
@@ -538,7 +584,7 @@ function renderWeeklyBreakdown(rows) {
     stats.total = sumDailyTotals(rowsW);
 
     const eff = ((stats.yes / stats.total) * 100 || 0).toFixed(1);
-    const delay = (100 - eff).toFixed(1);
+    const delay = ((stats.no / stats.total) * 100 || 0).toFixed(1);
 
     const scoreClass =
       stats.score > 0 ? "green" :
@@ -573,11 +619,12 @@ function renderWeeklyBreakdown(rows) {
   /* ================= YEARLY (UNCHANGED) ================= */
 function renderYearlyTables(rows) {
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
   ];
 
   const users = [...new Set(rows.map(r => r.username))];
+  yearlyTables.innerHTML = "";
 
   users.forEach(user => {
     const userRows = rows.filter(r => r.username === user);
@@ -593,13 +640,14 @@ function renderYearlyTables(rows) {
     let tbody = "";
 
     Object.entries(months).forEach(([m, rowsOfMonth]) => {
-      const stats = computeUserStats(rowsOfMonth, taskTotals, true)[user];
+      const stats = computeUserStats(rowsOfMonth, taskTotals, false)[user];
 
+      // ✅ Correct yearly total
       stats.total = sumDailyTotals(rowsOfMonth);
 
-
+      // ✅ Recalculate everything AFTER total is fixed
       const efficiency = ((stats.yes / stats.total) * 100 || 0).toFixed(1);
-      const delay = (100 - efficiency).toFixed(1);
+      const delay = ((stats.no / stats.total) * 100 || 0).toFixed(1);
 
       const scoreClass =
         stats.score > 0 ? "green" :
@@ -640,9 +688,7 @@ function renderYearlyTables(rows) {
               <th>Delay</th>
             </tr>
           </thead>
-          <tbody>
-            ${tbody}
-          </tbody>
+          <tbody>${tbody}</tbody>
         </table>
       </div>
     `;
